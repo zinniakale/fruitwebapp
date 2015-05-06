@@ -1,0 +1,33 @@
+<!--
+	CMSC 191 UV Exercise 3
+	References:
+		(1) Harman, D., Chapter 14: Ranking Algorithms. Retrieved from http://orion.lcg.ufrj.br/Dr.Dobbs/books/book5/chap14.htm (March 4, 2015)
+		(2) Create a Dynamic Scrolling Content Box Using AJAX. Retrieved from http://webdeveloperplus.com/jquery/create-a-dynamic-scrolling-content-box-using-ajax/ (March 8, 2015)
+-->
+
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<title>sample</title>
+	</head>
+	<body>
+		<div id="main">
+			
+		</div>
+		<div id="edit-form-wrapper">
+			<form id="edit-form" method="post">
+				<input type="number" name="id"/><br/>
+				<label for="name">Name:</label><input type="text" placeholder="Tomato" name="name"/><br />
+				<label for="quantity">Quantity:</label><input type="number" placeholder="2" name="quantity"/><br />
+				<label for="distributor">Distributor:</label><input type="text" placeholder="Del Monte" name="distributor"/><br />
+				<label for="price">Price:</label><input type="number" placeholder="10.00" name="price" step="0.01"/><br/>
+				<input type="submit" value="Save"/>
+				<input type="reset"/>
+			</form>
+		</div>
+		<div id="query-result"></div>
+		<script type="text/javascript" src="js/jquery-2.1.3.min.js"></script>
+		<script type="text/javascript" src="js/index.js"></script>
+	</body>
+</html>
