@@ -1,9 +1,7 @@
 var app = angular.module('dbsoria', ['ngAnimate'])
 .factory('fruitFactory', function() {
 	var dbHandler = new DBHandler();
-	// dbHandler.setUpDatabase('mysql');
-	// dbHandler.setUpDatabase('mongdb');
-	// dbHandler.setUpDatabase('couchdb');
+	dbHandler.setUpDatabase('mysql');
 
 	var fruitFactory = {};
 
