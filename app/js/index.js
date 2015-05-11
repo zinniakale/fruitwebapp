@@ -5,16 +5,16 @@ var app = angular.module('dbsoria', ['ngAnimate'])
 
 	var fruitFactory = {};
 
-	fruitFactory.getData = function() {
-		return dbHandler.getData();
+	fruitFactory.getData = function(callback) {
+		return dbHandler.getData(callback);
 	};
 
 	fruitFactory.updateData = function(id, data) {
 		dbHandler.updateData(id, data);
 	};
 
-	fruitFactory.deleteData = function(id) {
-		dbHandler.deleteData(id);
+	fruitFactory.deleteData = function(id, priceids) {
+		dbHandler.deleteData(id, priceids);
 	};
 
 	fruitFactory.addData = function(data, callback) {
@@ -40,7 +40,9 @@ var app = angular.module('dbsoria', ['ngAnimate'])
 		addNewFruit: false
 	};
 
-	$scope.fruitstand.fruits = fruitFactory.getData();
+	fruitFactory.getData(function(result) {
+		$scope.fruitstand.fruits = result;
+	});
 
 	$scope.fruitstand.openningFruitstand = function() {
 		$scope.fruitstand.openPacket = false;
@@ -71,37 +73,45 @@ var app = angular.module('dbsoria', ['ngAnimate'])
 	$scope.submitChanges = function() {
 		var submitted = $scope.fruitstand.editing;
 		var changes = {};
+		var changeCount = 0;
+
+		submitted.id = $scope.fruitstand.selectedFruit.id;
+		submitted.dateAdded = $scope.fruitstand.fruits[$scope.fruitstand.selectedFruit.index].dateAdded;
 
 		for(var key in submitted) {
-			if(submitted[key] == "") continue;
-			if(key != 'price') {
-				changes[key] = submitted[key];
+			if(submitted[key] == "" || submitted[key] == $scope.fruitstand.fruits[$scope.fruitstand.selectedFruit.index][key]) {
+				submitted[key] = $scope.fruitstand.fruits[$scope.fruitstand.selectedFruit.index][key];
 			}
-			else {
-				var date = new Date;
-				var m = date.getMonth()+1;
-				var d = date.getDate();
-				var y = date.getFullYear();
-
-				if(m < 10) m = "0" + m;
-				if(d < 10) d = "0" + d;
-
-				var curr = m + "-" + d + "-" + y;
-				changes.price = ((submitted.price).indexOf('.') == -1)? submitted.price + ".00" : submitted.price;
-				changes.dateUpdated = curr;
-			}
+			else changeCount++;
 		}
 
-		if((Object.keys(changes)).length != 0) {
-			fruitFactory.updateData($scope.fruitstand.selectedFruit.id, changes);
+		submitted.priceChanged = false;
+		submitted.price = ((submitted.price).indexOf('.') == -1)? submitted.price + ".00" : submitted.price;
+		if(submitted.price != $scope.fruitstand.fruits[$scope.fruitstand.selectedFruit.index].price) {
+			submitted.priceChanged = true;
+			var date = new Date;
+			var m = date.getMonth()+1;
+			var d = date.getDate();
+			var y = date.getFullYear();
+
+			if(m < 10) m = "0" + m;
+			if(d < 10) d = "0" + d;
+
+			var curr = m + "-" + d + "-" + y;
+			submitted.dateUpdated = curr;
+			submitted.priceChanged = true;
+		}
+
+		if(changeCount != 0) {
+			fruitFactory.updateData($scope.fruitstand.selectedFruit.id, $.extend(true, {}, submitted));
 			var index = $scope.fruitstand.selectedFruit.index;
-			for (var key in changes) {
-				if(key == 'price') {
-					$scope.fruitstand.fruits[index].price = changes.price;
-					($scope.fruitstand.fruits[index].priceHistory).push({ amount: changes.price, dateUpdated: changes.dateUpdated });
+			for (var key in submitted) {
+				if(key == 'price' && submitted.priceChanged) {
+					$scope.fruitstand.fruits[index].price = submitted.price;
+					($scope.fruitstand.fruits[index].priceHistory).push({ price: submitted.price, dateUpdated: submitted.dateUpdated });
 				}
-				else {
-					$scope.fruitstand.fruits[index][key] = changes[key];
+				else if (!(key == 'id' || key == 'dateAdded' || key == 'priceChanged' || key == 'dateUpdated')){
+					$scope.fruitstand.fruits[index][key] = submitted[key];
 				}
 			}
 		}
@@ -110,7 +120,12 @@ var app = angular.module('dbsoria', ['ngAnimate'])
 		$scope.fruitstand.showDistributorEdit = false;
 		$scope.fruitstand.showPriceEdit = false;
 		$scope.fruitstand.showQuantityEdit = false;
-		$scope.fruitstand.editing = {};
+		$scope.fruitstand.editing = {
+			name: "",
+			distributor: "",
+			price: "",
+			quantity: ""
+		};
 	}
 
 	$scope.findFruitIndex = function(id) {
@@ -126,8 +141,10 @@ var app = angular.module('dbsoria', ['ngAnimate'])
 
 		var index = $scope.fruitstand.selectedFruit.index;
 		var removed = $scope.fruitstand.fruits.splice(index, 1);
-		
-		fruitFactory.deleteData($scope.fruitstand.selectedFruit.id);
+		var priceids = [];
+		for(var i in removed[0].priceHistory) priceids.push(removed[0].priceHistory[i].id);
+
+		fruitFactory.deleteData($scope.fruitstand.selectedFruit.id, priceids);
 	}
 
 	$scope.addNew = function() {
@@ -160,15 +177,23 @@ var app = angular.module('dbsoria', ['ngAnimate'])
 		var price = $scope.fruitstand.adding.price;
 		$scope.fruitstand.adding.price = ((price).indexOf('.') == -1)? price + ".00" : price;
 		$scope.fruitstand.adding.dateAdded = curr;
-		$scope.fruitstand.adding.priceHistory = {
-			amount: $scope.fruitstand.adding.price,
+		$scope.fruitstand.adding.priceHistory = [{
+			price: $scope.fruitstand.adding.price,
 			dateUpdated: curr
-		};
-		fruitFactory.addData($scope.fruitstand.adding, function(newId) {
-			// $scope.fruitstand.fruits = fruitFactory.getData();
-			$scope.fruitstand.adding.id = newId;
-			$scope.fruitstand.fruits.push($scope.fruitstand.adding);
+		}];
+		fruitFactory.addData($scope.fruitstand.adding, function(newIds) {
+			$scope.fruitstand.adding.id = newIds.fruitid;
+			$scope.fruitstand.adding.priceHistory[0].id = newIds.priceid
+			var newFruit = $.extend(true, {}, $scope.fruitstand.adding);
+			console.log(newFruit);
+			$scope.fruitstand.fruits.push(newFruit);
+			$scope.fruitstand.adding = {};
+			$scope.$apply();
 		});
+	}
+
+	$scope.exitApp = function() {
+		
 	}
 })
 .animation('.viewIntro', function() {

@@ -33,55 +33,114 @@ class Database{
 $db = new Database;
 $db->connect();
 
-	public function insertFruit($name, $price, $qty, $distributor, $date){
-		$id = mysql_insert_id();
-		$db->query("INSERT INTO fruit SET id = '$id', name ='$name', price = '$price', qty = '$qty', distributor = '$distributor', date = '$date'") or die(mysql_errno($conn));
-
-			if(!empty($id)) {
-				echo $name." successfully added.";
-			}
+if($_GET['yes'] == 1) {
+	if($_GET['func'] == 'getData') {
+		echo $_GET['query'];
 	}
+}
+else {
+switch($_POST['func']) {
+	case 'getData':
+		$db->getData();
+		/*
+			should return:
+				[{
+					id: ,
+					name: "",
+					price: "00.00",
+					quantity: ,
+					distributor: "",
+					dateAdded: "mm-dd-yyyy",
+					priceHistory: [
+						{
+							id: ,
+							price: "00.00",
+							dateUpdated: "mm-dd-yyyy"
+						},
+						{..}, ...]
+				}, {..}, ...]
+		*/
+		echo json_encode($db->data);
+		break;
+	case 'addData':
+		$data = json_decode($_POST['data']);
+		$fruitid = $db->addFruit($data->name, $data->price, $data->quantity, $data->distributor, $data->dateAdded);
+		$priceid = $db->addFruitPrices($fruitid, $data->priceHistory->price, $data->priceHistory->dateUpdated);
+		
+		$return = new stdClass();
+		$return->fruitid = $fruitid;
+		$return->priceid = $priceid;
+		/*
+			should return:
+				{
+					fruitid: ,
+					priceid: 
+				}
+		*/
+		echo json_encode($return);
+		break;
+	case 'updateData':
+		$data = json_decode($_POST['data']);
+		$db->editFruit($data->id, $data->name, $data->price, $data->quantity, $data->distributor, $data->dateAdded);
+		if($data->priceChanged) $db->addFruitPrices($data->id, $data->price, $data->dateUpdated);
+		echo 1;
+		break;
+	case 'deleteData':
+		$data = json_decode($_POST['data']);
+		$db->deleteFruit($data->id);
+		$db->deleteFruitPrices($data->priceids);
+		echo 1;
+}
+}
+	// public function insertFruit($name, $price, $qty, $distributor, $date){
+	// 	$id = mysql_insert_id();
+	// 	$db->query("INSERT INTO fruit SET id = '$id', name ='$name', price = '$price', qty = '$qty', distributor = '$distributor', date = '$date'") or die(mysql_errno($conn));
 
-	public function insertFruitPrice($name, $price, $dateUpdated){
-		$dateUpdated = date("Y-m-d"); /* SysDate */
+	// 		if(!empty($id)) {
+	// 			echo $name." successfully added.";
+	// 		}
+	// }
 
-		$id = mysql_insert_id();
-		$db->query("INSERT INTO fruitprices SET id='$id', name ='$name', price = '$price', dateUpdated = '$dateUpdated'") or die(mysql_errno($conn));
+	// public function insertFruitPrice($name, $price, $dateUpdated){
+	// 	$dateUpdated = date("Y-m-d"); /* SysDate */
 
-		if(!empty($id)) {
-			echo $name." successfully added.";
-		}
-	}			
+	// 	$id = mysql_insert_id();
+	// 	$db->query("INSERT INTO fruitprices SET id='$id', name ='$name', price = '$price', dateUpdated = '$dateUpdated'") or die(mysql_errno($conn));
 
-	public function viewAll(){
-		$db->query("SELECT * FROM FRUIT");
-	}
+	// 	if(!empty($id)) {
+	// 		echo $name." successfully added.";
+	// 	}
+	// }			
 
-	public function search($input){
-		$db->query("SELECT * FROM FRUIT WHERE NAME = '" . $input . "'");
-	}	
+	// public function viewAll(){
+	// 	$db->query("SELECT * FROM FRUIT");
+	// }
 
-	public function priceHistory($input){
-		$db->query ("SELECT * FROM FRUITPRICE WHERE FRUITID = " . $input);
-	}
+	// public function search($input){
+	// 	$db->query("SELECT * FROM FRUIT WHERE NAME = '" . $input . "'");
+	// }	
 
-	public function editFruit(){
-		$sql = "UPDATE fruit 
-		SET name='".$_POST['name'].
-				  "', quantity=".$_POST['quantity'].
-				  ", distributor='".$_POST['distributor'].
-				  "' WHERE id=".$_POST['id'];
+	// public function priceHistory($input){
+	// 	$db->query ("SELECT * FROM FRUITPRICE WHERE FRUITID = " . $input);
+	// }
+
+	// public function editFruit(){
+	// 	$sql = "UPDATE fruit 
+	// 	SET name='".$_POST['name'].
+	// 			  "', quantity=".$_POST['quantity'].
+	// 			  ", distributor='".$_POST['distributor'].
+	// 			  "' WHERE id=".$_POST['id'];
 
 
-		$result = $db->query($sql);
-		echo $result;
-	}
+	// 	$result = $db->query($sql);
+	// 	echo $result;
+	// }
 
-	public function editFruitPrice($id){
-		$sql = "INSERT INTO fruitprice(fruitId,price) VALUES(".$_POST['id'].", ".$_POST['id'].")";
-		$result = $db->query($sql);
-		echo $result;
-	}
+	// public function editFruitPrice($id){
+	// 	$sql = "INSERT INTO fruitprice(fruitId,price) VALUES(".$_POST['id'].", ".$_POST['id'].")";
+	// 	$result = $db->query($sql);
+	// 	echo $result;
+	// }
 /*
 $rows = array();
 
@@ -93,5 +152,6 @@ while($row = mysqli_fetch_assoc($result)){
 
 //encode first to json for easier parsing on the javascript side
 //echo json_encode($result);
-echo $result;
+//echo $result;
+
 ?>

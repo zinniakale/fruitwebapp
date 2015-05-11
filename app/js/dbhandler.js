@@ -8,8 +8,6 @@ DBHandler.prototype = {
 			case 'mysql':
 				this.define.dbms = 'mysql';
 				this.define.serverUrl = 'localhost/cmsc191_exer6/mysql/index.php';
-				this.define.user = "root";
-				this.define.pword = "";
 				break;
 			case 'mongodb':
 				this.define.dbms = 'mongodb';
@@ -21,54 +19,78 @@ DBHandler.prototype = {
 				break;
 		}
 	},
-	getData: function() {
-		switch(this.define.dbms) {
-			case 'mysql':
-				$.ajax({
-					url: this.define.serverUrl,
-					type: 'POST',
-					data: {
-						func: 'getData'
-					},
-					success: function(data) {
-						console.log(data);
-					}
- 				});
-				break;
-			case 'mongodb':
-				break;
-			case 'couchdb':
-				break;
-		}	
+	getData: function(callback) {
+		$.ajax({
+			url: this.define.serverUrl,
+			type: 'POST',
+			data: {
+				func: 'getData'
+			},
+			success: function(data) {
+				var result = JSON.parse(data);
+				callback(result);
+			}
+		});
 	},
 	updateData: function(id, data) {
-		switch(this.define.dbms) {
-			case 'mysql':
-				break;
-			case 'mongodb':
-				break;
-			case 'couchdb':
-				break;
-		}		
+		data.price = Number.parseFloat(data.price);
+		data.quantity = Number.parseInt(data.quantity);
+		$.ajax({
+			url: this.define.serverUrl,
+			type: 'POST',
+			data: {
+				func: 'updateData',
+				data: JSON.stringify(data)
+			},
+			success: function(data) {
+				console.log(data);
+			}
+		});
 	},
-	deleteData: function(id) {
-		switch(this.define.dbms) {
-			case 'mysql':
-				break;
-			case 'mongodb':
-				break;
-			case 'couchdb':
-				break;
-		}	
+	deleteData: function(id, priceids) {	
+		var deleting = {
+			id: id,
+			priceids: priceids
+		};
+
+		$.ajax({
+			url: this.define.serverUrl,
+			type: 'POST',
+			data: {
+				func: 'deleteData',
+				data: JSON.stringify(deleting)
+			},
+			success: function(data) {
+				console.log(data);
+			}
+		});
 	},
-	addData: function(data, callback) {
-		switch(this.define.dbms) {
-			case 'mysql':
-				break;
-			case 'mongodb':
-				break;
-			case 'couchdb':
-				break;
-		}	
+	addData: function(add, callback) {
+		var price = Number.parseFloat(add.price);
+		var quantity = Number.parseInt(add.quantity);
+		var data = {
+			name: add.name,
+			distributor: add.distributor,
+			price: price,
+			quantity: quantity,
+			dateAdded: add.dateAdded,
+			priceHistory: {
+				price: price,
+				dateUpdated: add.priceHistory[0].dateUpdated
+			}
+		};
+
+		$.ajax({
+			url: this.define.serverUrl,
+			type: 'POST',
+			data: {
+				func: "addData",
+				data: JSON.stringify(data)
+			},
+			success: function(data) {
+				var result = JSON.parse(data);
+				callback(result);
+			}
+		});
 	}
 }
