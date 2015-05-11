@@ -27,13 +27,12 @@ DBHandler.prototype = {
 				func: 'getData'
 			},
 			success: function(data) {
-				// console.log(data);
 				var result = JSON.parse(data);
 				callback(result);
 			}
 		});
 	},
-	updateData: function(id, data) {
+	updateData: function(id, data, callback) {
 		data.price = Number.parseFloat(data.price);
 		data.quantity = Number.parseInt(data.quantity);
 		$.ajax({
@@ -44,7 +43,8 @@ DBHandler.prototype = {
 				data: JSON.stringify(data)
 			},
 			success: function(data) {
-				console.log(data);
+				var result = JSON.parse(data);
+				if(result != -1) callback(data);
 			}
 		});
 	},
@@ -53,7 +53,6 @@ DBHandler.prototype = {
 			id: id,
 			priceids: priceids
 		};
-
 		$.ajax({
 			url: this.define.serverUrl,
 			type: 'POST',

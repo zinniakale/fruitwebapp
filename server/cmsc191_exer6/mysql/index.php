@@ -1,10 +1,6 @@
 <?php
 header("Access-Control-Allow-Origin: *");
-/**
-* Allan: Database class for object-oriented database connection. 
-* Change $dbname to whatever you have named your schema, in
-* my case I re-used the unindexed schema from the first exercise
-*/
+
 class Database{
 	public function connect(){
 		$username = "root";
@@ -30,7 +26,7 @@ class Database{
 			while($row = $result->fetch_object()) {
 				$p = new stdClass();
 				$p->id = $row->id;
-				$p->price = $row->price;
+				$p->price = $row->price.".00";
 				$p->dateUpdated = $row->dateUpdated;
 				array_push($value->priceHistory, $p);
 			}
@@ -60,50 +56,33 @@ class Database{
 		$result->free();
 		$this->data = $ret;
 		$this->_getPriceHistory();
-	/*
-			should return:
-				[{
-					id: ,
-					name: "",
-					price: "00.00",
-					quantity: ,
-					distributor: "",
-					dateAdded: "mm-dd-yyyy",
-					priceHistory: [
-						{
-							id: ,
-							price: "00.00",
-							dateUpdated: "mm-dd-yyyy"
-						},
-						{..}, ...]
-				}, {..}, ...]
-		*/
 	}
 
-	public function addFruit($name, $price, $qty, $distributor, $date){
-		/*
-			should return:
-				{
-					fruitid: ,
-					priceid: 
-				}
-		*/
+	public function addFruit($name, $price, $qty, $distributor, $dateAdded){
+		$stmt = "INSERT INTO fruit(name, price, quantity, distributor, dateAdded) VALUES (\"{$name}\", {$price}, {$qty}, \"{$distributor}\", \"{$dateAdded}\")";
+		$this->query($stmt);
+		return $this->mysqli->insert_id;
 	}
 
 	public function addFruitPrices($id, $price, $dateUpdated){ 
-
+		$stmt = "INSERT INTO fruitprices(fruitid, price, dateUpdated) VALUES (\"{$id}\", \"{$price}\", \"{$dateUpdated}\")";
+		$this->query($stmt);
+		return $this->mysqli->insert_id;
 	}
 
 	public function editFruit($id, $name, $price, $qty, $distributor, $date){
-
+		$stmt = "UPDATE fruit SET name=\"{$name}\", price={$price}, quantity={$qty}, distributor=\"{$distributor}\", dateAdded=\"{$date}\" WHERE id=$id";
+		$this->query($stmt);
 	}
 
 	public function deleteFruit($id){
-
+		$this->query("DELETE FROM fruit WHERE id=$id");
 	}
 
 	public function deleteFruitPrices($priceids){
-
+		foreach ($priceids as $key => $value) {
+			$this->query("DELETE FROM fruitprices WHERE id=$value");
+		}
 	}
 }
 
@@ -123,14 +102,16 @@ switch($_POST['func']) {
 		$return = new stdClass();
 		$return->fruitid = $fruitid;
 		$return->priceid = $priceid;
-		
 		echo json_encode($return);
 		break;
 	case 'updateData':
 		$data = json_decode($_POST['data']);
 		$db->editFruit($data->id, $data->name, $data->price, $data->quantity, $data->distributor, $data->dateAdded);
-		if($data->priceChanged) $db->addFruitPrices($data->id, $data->price, $data->dateUpdated);
-		echo 1;
+		if($data->priceChanged) {
+			$priceid = $db->addFruitPrices($data->id, $data->price, $data->dateUpdated);
+			echo json_encode($priceid);
+		}
+		else echo 1;
 		break;
 	case 'deleteData':
 		$data = json_decode($_POST['data']);
@@ -138,67 +119,4 @@ switch($_POST['func']) {
 		$db->deleteFruitPrices($data->priceids);
 		echo 1;
 }
-
-	// public function insertFruit($name, $price, $qty, $distributor, $date){
-	// 	$id = mysql_insert_id();
-	// 	$db->query("INSERT INTO fruit SET id = '$id', name ='$name', price = '$price', qty = '$qty', distributor = '$distributor', date = '$date'") or die(mysql_errno($conn));
-
-	// 		if(!empty($id)) {
-	// 			echo $name." successfully added.";
-	// 		}
-	// }
-
-	// public function insertFruitPrice($name, $price, $dateUpdated){
-	// 	$dateUpdated = date("Y-m-d"); /* SysDate */
-
-	// 	$id = mysql_insert_id();
-	// 	$db->query("INSERT INTO fruitprices SET id='$id', name ='$name', price = '$price', dateUpdated = '$dateUpdated'") or die(mysql_errno($conn));
-
-	// 	if(!empty($id)) {
-	// 		echo $name." successfully added.";
-	// 	}
-	// }			
-
-	// public function viewAll(){
-	// 	$db->query("SELECT * FROM FRUIT");
-	// }
-
-	// public function search($input){
-	// 	$db->query("SELECT * FROM FRUIT WHERE NAME = '" . $input . "'");
-	// }	
-
-	// public function priceHistory($input){
-	// 	$db->query ("SELECT * FROM FRUITPRICE WHERE FRUITID = " . $input);
-	// }
-
-	// public function editFruit(){
-	// 	$sql = "UPDATE fruit 
-	// 	SET name='".$_POST['name'].
-	// 			  "', quantity=".$_POST['quantity'].
-	// 			  ", distributor='".$_POST['distributor'].
-	// 			  "' WHERE id=".$_POST['id'];
-
-
-	// 	$result = $db->query($sql);
-	// 	echo $result;
-	// }
-
-	// public function editFruitPrice($id){
-	// 	$sql = "INSERT INTO fruitprice(fruitId,price) VALUES(".$_POST['id'].", ".$_POST['id'].")";
-	// 	$result = $db->query($sql);
-	// 	echo $result;
-	// }
-/*
-$rows = array();
-
-//fetch all result rows and store them in an array;
-while($row = mysqli_fetch_assoc($result)){
-	array_push($rows, $row);
-}
-*/
-
-//encode first to json for easier parsing on the javascript side
-//echo json_encode($result);
-//echo $result;
-
 ?>
