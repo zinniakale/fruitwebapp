@@ -7,15 +7,15 @@ DBHandler.prototype = {
 		switch(dbms) {
 			case 'mysql':
 				this.define.dbms = 'mysql';
-				this.define.serverUrl = 'localhost/cmsc191_exer6/mysql/index.php';
+				this.define.serverUrl = 'http://localhost/cmsc191_exer6/mysql/index.php';
 				break;
 			case 'mongodb':
 				this.define.dbms = 'mongodb';
-				this.define.serverUrl = 'localhost/cmsc191_exer6/mongodb/index.php';
+				this.define.serverUrl = 'http://localhost/cmsc191_exer6/mongodb/index.php';
 				break;
 			case 'couchdb':
 				this.define.dbms = 'couchdb';
-				this.define.serverUrl = 'localhost/cmsc191_exer6/couchdb/index.php';
+				this.define.serverUrl = 'http://localhost/cmsc191_exer6/couchdb/index.php';
 				break;
 		}
 	},
@@ -27,6 +27,7 @@ DBHandler.prototype = {
 				func: 'getData'
 			},
 			success: function(data) {
+				// console.log(data);
 				var result = JSON.parse(data);
 				callback(result);
 			}

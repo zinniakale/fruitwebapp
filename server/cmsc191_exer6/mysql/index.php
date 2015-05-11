@@ -1,4 +1,5 @@
 <?php
+header("Access-Control-Allow-Origin: *");
 /**
 * Allan: Database class for object-oriented database connection. 
 * Change $dbname to whatever you have named your schema, in
@@ -11,38 +12,55 @@ class Database{
 		$hostname = "localhost";
 		$dbname = "fruitdb";
 		
-		$this->connection = mysqli_connect($hostname, $username, $password, $dbname);
-		
-		if(mysqli_connect_errno()){
-			echo "Failed to connect to MySQL: " . mysqli_connect_error();
-		}
+		$this->mysqli = mysqli_connect($hostname, $username, $password, $dbname) or die("Error ".mysqli_error($this->mysqli));
+
 	}
 	
 	//encapsulation for any query (if we use mysqli_query everytime we have to specify the connection every time,
 	//but we are only using a single connection)
-	public function query($query){
-		return mysqli_query($this->connection, $query);
+	protected function query($query){
+		$result = $this->mysqli->query($query);
+		return $result;
+	}
+
+	protected function _getPriceHistory(){
+		foreach ($this->data as $key => $value) {
+			$id = $value->id;
+			$result = $this->query("SELECT * FROM fruitprices WHERE id=$id");
+			while($row = $result->fetch_object()) {
+				$p = new stdClass();
+				$p->id = $row->id;
+				$p->price = $row->price;
+				$p->dateUpdated = $row->dateUpdated;
+				array_push($value->priceHistory, $p);
+			}
+			$result->free();
+		}
 	}
 	
 	//close connection on page close
 	public function __destruct(){
-		mysqli_close($this->connection);
+		$this->mysqli->close();
 	}
-}
 
-$db = new Database;
-$db->connect();
-
-if($_GET['yes'] == 1) {
-	if($_GET['func'] == 'getData') {
-		echo $_GET['query'];
-	}
-}
-else {
-switch($_POST['func']) {
-	case 'getData':
-		$db->getData();
-		/*
+	public function getData() {
+		$ret = [];
+		$result = $this->query("SELECT * FROM fruit");
+		while($row = $result->fetch_object()) {
+			$r = new stdClass();
+			$r->id = $row->id;
+			$r->name = $row->name;
+			$r->price = $row->price.".00";
+			$r->quantity = $row->quantity;
+			$r->distributor = $row->distributor;
+			$r->dateAdded = $row->dateAdded;
+			$r->priceHistory = [];
+			array_push($ret, $r);
+		}
+		$result->free();
+		$this->data = $ret;
+		$this->_getPriceHistory();
+	/*
 			should return:
 				[{
 					id: ,
@@ -60,6 +78,41 @@ switch($_POST['func']) {
 						{..}, ...]
 				}, {..}, ...]
 		*/
+	}
+
+	public function addFruit($name, $price, $qty, $distributor, $date){
+		/*
+			should return:
+				{
+					fruitid: ,
+					priceid: 
+				}
+		*/
+	}
+
+	public function addFruitPrices($id, $price, $dateUpdated){ 
+
+	}
+
+	public function editFruit($id, $name, $price, $qty, $distributor, $date){
+
+	}
+
+	public function deleteFruit($id){
+
+	}
+
+	public function deleteFruitPrices($priceids){
+
+	}
+}
+
+$db = new Database;
+$db->connect();
+
+switch($_POST['func']) {
+	case 'getData':
+		$db->getData();
 		echo json_encode($db->data);
 		break;
 	case 'addData':
@@ -70,13 +123,7 @@ switch($_POST['func']) {
 		$return = new stdClass();
 		$return->fruitid = $fruitid;
 		$return->priceid = $priceid;
-		/*
-			should return:
-				{
-					fruitid: ,
-					priceid: 
-				}
-		*/
+		
 		echo json_encode($return);
 		break;
 	case 'updateData':
@@ -91,7 +138,7 @@ switch($_POST['func']) {
 		$db->deleteFruitPrices($data->priceids);
 		echo 1;
 }
-}
+
 	// public function insertFruit($name, $price, $qty, $distributor, $date){
 	// 	$id = mysql_insert_id();
 	// 	$db->query("INSERT INTO fruit SET id = '$id', name ='$name', price = '$price', qty = '$qty', distributor = '$distributor', date = '$date'") or die(mysql_errno($conn));
